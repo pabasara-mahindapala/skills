@@ -21,7 +21,7 @@ else
 fi
 ```
 
-If the clone or pull fails (e.g. network unavailable), fall back to whatever local state exists and note that docs may not be current.
+If the clone or pull fails (e.g. network unavailable), fall back to whatever existing local state.
 
 ## Step 2 — Locate the right version directory
 
@@ -101,10 +101,9 @@ Use `Grep` to search across the relevant version's docs for keywords related to 
 - Feature name or API name (e.g. `SCIM 2.0`, `TOTP`, `OAuth2`)
 - Config property (e.g. `enable_scim2`, `identity_mgt`)
 - Error keyword or exception class name
-- Endpoint path (e.g. `/wso2/scim/Users`)
+- Endpoint path (e.g. `/scim2/Users`)
 
 **High-value files to check for any topic:**
-- `references/wso2-identity-server-feature-deprecation.md` — whether the feature is deprecated/retired
 - `references/about-this-release.md` — what changed in this version
 - `apis/<feature>-rest-api.md` — REST API details
 - `guides/<topic>/` — configuration and how-to steps
@@ -113,6 +112,5 @@ Use `Grep` to search across the relevant version's docs for keywords related to 
 
 Incorporate the documentation findings into your analysis:
 - Cite the version-specific doc path when referencing behaviour or configuration
-- Note if a feature is deprecated or absent in the customer's version (check `feature-deprecation.md`)
-- If a feature doc exists in a newer version but not the customer's version, it may be a version gap — call this out explicitly
+- Note any discrepancies between the docs and observed behaviour (e.g. if a config property is documented but not present in the product, or vice versa)
 - Cross-reference with source code and GitHub issues for a complete picture
