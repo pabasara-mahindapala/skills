@@ -7,13 +7,13 @@ argument-hint: "Provide case ID, product version, Docker image tag, and the list
 # WSO2 Product Security Vulnerability Scan Skill
 
 ## When to Use
-- Customer reports CVEs from a Docker image security scan (Trivy, Grype, Snyk, or similar SCA tools).
+- CVEs given from a Docker image security scan (Trivy, Grype, Snyk, or similar SCA tools).
 - You need to locate a vulnerable component inside a WSO2 product Docker image.
 - You need to assess whether a flagged CVE is actually exploitable in the context of WSO2 IS.
 
 ## Step 1 — Pull the WSO2 Docker Image
 
-WSO2 Docker images are hosted at `registry.wso2.com`. Standard WSO2 account credentials do not work — you need a **CLI Secret** from the WSO2 Support Portal:
+WSO2 Docker images are hosted at `registry.wso2.com`. You need a **CLI Secret** from the WSO2 Support Portal:
 
 > **Support Portal → Projects → My Projects → Registry Tokens → Generate Token**
 
