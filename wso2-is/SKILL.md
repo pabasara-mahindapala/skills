@@ -35,23 +35,36 @@ argument-hint: "Provide WSO2_IS_HOME and issue summary (startup failure, auth fl
   - `<WSO2_IS_HOME>/bin/version.txt`
 
 ### Core configuration locations
-- Main config:
+
+> **`deployment.toml` is the single source of truth for all configuration.**
+> At startup, a Jinja2-based templating engine reads `deployment.toml` and writes config files (XML) from `.j2` template mappings. Any direct edits to those generated files will be overwritten on the next restart. Always make persistent changes in `deployment.toml`.
+>
+> J2 template files (the mappings) live at:
+> - `<WSO2_IS_HOME>/repository/resources/conf/templates/repository/conf/`
+>
+> Each `.j2` file corresponds to a generated config file. For example:
+> - `identity/identity.xml.j2` → generates `repository/conf/identity/identity.xml`
+> - `carbon.xml.j2` → generates `repository/conf/carbon.xml`
+> - `datasources/master-datasources.xml.j2` → generates the datasource XML
+>
+> If you need to understand what a `deployment.toml` key controls, find the matching `.j2` file and trace where the key is referenced.
+
+- Main configs (edit this):
   - `<WSO2_IS_HOME>/repository/conf/deployment.toml`
-- Carbon/runtime config:
+- Generated config files — overwritten on restart; use `deployment.toml` for persistent changes:
   - `<WSO2_IS_HOME>/repository/conf/carbon.xml`
-  - `<WSO2_IS_HOME>/repository/conf/carbon.properties`
-  - `<WSO2_IS_HOME>/repository/conf/log4j2.properties`
-- Identity configs:
   - `<WSO2_IS_HOME>/repository/conf/identity/identity.xml`
   - `<WSO2_IS_HOME>/repository/conf/identity/identity-event.properties`
   - `<WSO2_IS_HOME>/repository/conf/identity/application-authentication.xml`
-  - `<WSO2_IS_HOME>/repository/conf/identity/entitlement.properties`
-- Datasource/JDBC:
-  - `<WSO2_IS_HOME>/repository/conf/datasources/`
+  - `<WSO2_IS_HOME>/repository/conf/datasources/master-datasources.xml`
+  - `<WSO2_IS_HOME>/repository/conf/claim-config.xml`
+  - `<WSO2_IS_HOME>/repository/conf/scim2-schema-extension.config`
 - Security/TLS:
   - `<WSO2_IS_HOME>/repository/conf/security/`
 - Tomcat-level config:
   - `<WSO2_IS_HOME>/repository/conf/tomcat/`
+- Logging config:
+  - `<WSO2_IS_HOME>/repository/conf/log4j2.properties`
 
 ### Deployment locations
 - Webapps (WARs):
@@ -75,8 +88,7 @@ argument-hint: "Provide WSO2_IS_HOME and issue summary (startup failure, auth fl
   - `<WSO2_IS_HOME>/lib/`
 - Extensions/patches:
   - `<WSO2_IS_HOME>/repository/components/extensions/`
-  - `<WSO2_IS_HOME>/repository/components/patches/`
-  - `<WSO2_IS_HOME>/repository/components/servicepacks/`
+  - `<WSO2_IS_HOME>/repository/components/patches/` - New patched JAR files should be placed in `repository/components/patches/patch9999` directory.
 - Useful quick checks:
   - duplicate jar versions across `dropins/`, `plugins/`, and `lib/`
   - missing transitive jars after manual bundle updates
@@ -150,6 +162,49 @@ argument-hint: "Provide WSO2_IS_HOME and issue summary (startup failure, auth fl
 - Web UI not loading: `repository/deployment/server/webapps/`, `repository/conf/tomcat/`, `repository/logs/http_access_*.log`
 - Bundle resolution / `ClassNotFound`: `repository/components/dropins/`, `repository/components/plugins/`, `repository/components/lib/`
 - Patch/update anomalies: `repository/components/patches/`, `repository/logs/patches.log`, `bin/wso2update_*`
+
+## Authorization Code Flow Analysis
+
+When a customer reports "login not working" on an OIDC/OAuth2 authorization code flow, correlate three sources in this order:
+
+### 1. IS audit log (`audit.log` / `a.log`) — per-session correlation ID
+Use the correlation ID to trace the full session. Key events to look for in sequence:
+
+| Audit event | What it tells you |
+|---|---|
+| `LoginStepSuccess` (Step 1, `LOCAL`, `IdentifierExecutor`) | User entered their identifier; IS accepted it |
+| `LoginStepSuccess` (Step 2, federated IdP, `SAMLSSOAuthenticator`) | Federated auth completed; note `AuthenticatedIdP` and `UserStoreDomain` |
+| `Get-User-List` by `http://wso2.org/claims/username` | IS resolved the federated subject to a local user |
+| `Get-User-Claim-Values` Target=`DOMAIN/username` | Claims retrieved for token building |
+| `Set-User-Claim-Values` Target=`DOMAIN/username` | Post-auth claim updates (e.g. `lastLoginTime`) |
+| **`Set-User-Claim-Values` Target=`username` (no domain) → Failure** | **Bug: domain prefix dropped, user looked up in PRIMARY, fails with error 30007** |
+| `Login` (final) `Result: Success` | Full authentication completed — auth code about to be issued |
+
+### 2. IS carbon log (`wso2carbon.log` / `c.log`) — adaptive auth script tracing
+Look for `JsLogger` lines which are `console.log()` calls from the adaptive authentication script:
+
+### 3. HTTP access log + HAR — end-to-end browser flow proof
+Cross-reference the auth code value between HAR and access log to confirm the full round-trip:
+
+```
+HAR entry N:   GET /oauth2/authorize?sessionDataKey=X  → 302
+HAR entry N+1: GET /EDGESERVICE/getAuthCode?code=<CODE>&state=...  → 302
+access.log:    POST /oauth2/token?code=<CODE>&grant_type=authorization_code  → 200 <bytes>
+HAR entry N+2: GET /app/index.html  → 200   ← portal loaded
+```
+
+If the token endpoint returns **200**, the authorization code was valid and tokens were issued. The login completed from IS's perspective. If the portal then fails, the issue is in the application layer, not IS.
+
+**Common response codes in access log and what they mean in this flow:**
+
+| Endpoint | Status | Meaning |
+|---|---|---|
+| `POST /commonauth` | 302 | Step processed; redirecting to next step or IdP |
+| `GET /oauth2/authorize` | 302 | Auth code issued; redirecting to `redirect_uri` |
+| `POST /oauth2/token` | 200 | Token exchange successful |
+| `POST /oauth2/token` | 400 | Bad request — code expired, already used, or `redirect_uri` mismatch |
+| `GET /oauth2/userinfo` | 401 | Access token expired or invalid |
+| `GET /authenticationendpoint/login.do` | 200 | Login page served (session still at identifier/password step) |
 
 ## Output Expectations
 When invoked, produce:
