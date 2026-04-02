@@ -9,8 +9,8 @@ COPILOT_DIR="$HOME/.copilot/skills"
 CLAUDE_DIR="$HOME/.claude/skills"
 GIT_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Collect unique non-pvt skill names from both source directories
-SKILLS=$( {
+# Collect unique skill names from both source directories, separated by type
+PUBLIC_SKILLS=$( {
     for dir in "$COPILOT_DIR"/*/; do
         [[ -d "$dir" ]] || continue
         skill=$(basename "$dir")
@@ -24,6 +24,23 @@ SKILLS=$( {
         echo "$skill"
     done
 } | sort -u )
+
+PRIVATE_SKILLS=$( {
+    for dir in "$COPILOT_DIR"/*/; do
+        [[ -d "$dir" ]] || continue
+        skill=$(basename "$dir")
+        [[ "$skill" == pvt-* ]] || continue
+        echo "$skill"
+    done
+    for dir in "$CLAUDE_DIR"/*/; do
+        [[ -d "$dir" ]] || continue
+        skill=$(basename "$dir")
+        [[ "$skill" == pvt-* ]] || continue
+        echo "$skill"
+    done
+} | sort -u )
+
+SKILLS=$(echo -e "$PUBLIC_SKILLS\n$PRIVATE_SKILLS" | grep -v '^$' | sort -u)
 
 if [[ -z "$SKILLS" ]]; then
     echo "No skills found to sync."
@@ -60,13 +77,14 @@ while IFS= read -r skill; do
         cp "$claude_file" "$copilot_file"
     fi
 
-    # Update the git repo with the now-synced SKILL.md
-    # Prefer the claude copy (just synced above, so both are identical)
-    mkdir -p "$GIT_REPO/$skill"
-    if [[ -f "$claude_file" ]]; then
-        cp "$claude_file" "$GIT_REPO/$skill/SKILL.md"
-    elif [[ -f "$copilot_file" ]]; then
-        cp "$copilot_file" "$GIT_REPO/$skill/SKILL.md"
+    # Update the git repo with the now-synced SKILL.md (public skills only)
+    if [[ "$skill" != pvt-* ]]; then
+        mkdir -p "$GIT_REPO/$skill"
+        if [[ -f "$claude_file" ]]; then
+            cp "$claude_file" "$GIT_REPO/$skill/SKILL.md"
+        elif [[ -f "$copilot_file" ]]; then
+            cp "$copilot_file" "$GIT_REPO/$skill/SKILL.md"
+        fi
     fi
 done <<< "$SKILLS"
 
