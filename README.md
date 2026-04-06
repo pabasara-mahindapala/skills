@@ -17,7 +17,7 @@ Each skill folder contains a `SKILL.md` file with details on the skill.
 ## Usage
 
 Skills are consumed by AI agents via:
-- **GitHub Copilot**: `~/.copilot/skills/`
+- **GitHub Copilot**: `~/.agents/skills/`
 - **Claude**: `~/.claude/skills/`
 
 Use the sync script to keep local skill directories in sync with this repo.

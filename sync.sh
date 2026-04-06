@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# sync.sh — Synchronize SKILL.md files between ~/.copilot/skills and ~/.claude/skills,
+# sync.sh — Synchronize SKILL.md files between ~/.agents/skills and ~/.claude/skills,
 #           then commit any changes to the skills git repository.
 # Skips skill directories that begin with the "pvt-" prefix.
 
 set -euo pipefail
 
-COPILOT_DIR="$HOME/.copilot/skills"
+COPILOT_DIR="$HOME/.agents/skills"
 CLAUDE_DIR="$HOME/.claude/skills"
 GIT_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
