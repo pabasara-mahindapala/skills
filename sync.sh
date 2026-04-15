@@ -101,5 +101,5 @@ else
     echo "Git repo: changes committed."
 fi
 
-git push
-echo "Git repo: pushed to remote."
+# git push
+# echo "Git repo: pushed to remote."
