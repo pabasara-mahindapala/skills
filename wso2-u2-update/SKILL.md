@@ -20,7 +20,7 @@ argument-hint: "Provide: WSO2_IS_HOME path, target update level (e.g. 7.1.0.50 o
 1. `WSO2_IS_HOME` — absolute path to the product directory (e.g., `/opt/wso2is-7.1.0`)
    Must NOT be inside the backup directory (`~/.wso2-updates/backup/`).
 2. `TARGET_LEVEL` — e.g., `7.1.0.50` (numeric suffix after product name), or `latest` to go to the latest level.
-3. `WSO2_USERNAME` — WSO2 account email (e.g., `user@wso2.com`).
+3. `WSO2_USERNAME` — WSO2 account email.
 4. `WSO2_PASSWORD` — **NEVER ask the user for this.** Always retrieve silently from macOS Keychain:
    ```bash
    $(security find-internet-password -a '<USERNAME>' -w 2>/dev/null || security find-generic-password -a '<USERNAME>' -w 2>/dev/null)
