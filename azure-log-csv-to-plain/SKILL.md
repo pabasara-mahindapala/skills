@@ -40,7 +40,7 @@ Typical source shape:
 Run the bundled script with the file path the user provided:
 
 ```bash
-perl /Users/<username>/.agents/skills/azure-log-csv-to-plain/azure_csv_logs_to_plain.pl "/path/to/query_data.csv"
+perl /Users/pabasara/.agents/skills/azure-log-csv-to-plain/azure_csv_logs_to_plain.pl "/path/to/query_data.csv"
 ```
 
 The script rewrites the content and renames the result to `/path/to/query_data.log`.
