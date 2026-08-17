@@ -48,9 +48,9 @@ Update logs are written to: `<WSO2_IS_HOME>/updates/logs/wso2update-<date>.log`
 ## Commands Reference
 
 ### Password Macro
-All commands that require `--password` must use this keychain lookup (replace `user@wso2.com` with the actual username):
+All commands that require `--password` must use this keychain lookup (replace with the actual username):
 ```
---password "$(security find-internet-password -a 'user@wso2.com' -w 2>/dev/null || security find-generic-password -a 'user@wso2.com' -w 2>/dev/null)"
+--password "$(security find-internet-password -a '<USERNAME>' -w 2>/dev/null || security find-generic-password -a '<USERNAME>' -w 2>/dev/null)"
 ```
 **Never ask the user for the password. Never display the retrieved value.**
 
