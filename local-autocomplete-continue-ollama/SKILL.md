@@ -1,7 +1,6 @@
 ---
 name: local-autocomplete-continue-ollama
-description: Maintain the local tab-autocomplete setup in VS Code - the Continue extension backed by Ollama running a Qwen2.5-Coder base model on this Mac. Use to switch or try a different model (e.g. Qwen2.5-Coder 7B), change keep-alive or other Continue options, check status and memory, troubleshoot missing suggestions, or remove the setup. 
-Keywords: continue, ollama, tab autocomplete, ghost text, qwen2.5-coder, local model, config.yaml, keepAlive, fim.
+description: Maintain the local tab-autocomplete setup in VS Code - the Continue extension backed by Ollama running a Qwen2.5-Coder base model on this Mac. Use to switch or try a different model (e.g. Qwen2.5-Coder 7B), change keep-alive or other Continue options, check status and memory, troubleshoot missing suggestions, or remove the setup. Keywords - continue, ollama, tab autocomplete, ghost text, qwen2.5-coder, local model, config.yaml, keepAlive, fim.
 ---
 
 # Local tab autocomplete: Continue + Ollama
@@ -63,7 +62,7 @@ models:
    curl -s localhost:11434/api/generate -d '{"model":"qwen2.5-coder:7b-base","prompt":"def is_prime(n):\n    ","suffix":"\n\nprint(is_prime(7))\n","stream":false,"options":{"num_predict":80,"temperature":0}}' \
      | python3 -I -c "import json,sys; r=json.load(sys.stdin); print(r['response']); print('tok/s', round(r['eval_count']/(r['eval_duration']/1e9),1))"
    ```
-4. **Edit `config.yaml`:** back it up, then change `model:` (and `name:`) to the new tag. To keep both and flip quickly, keep the old entry commented out.
+4. **Edit `config.yaml`:** back it up, then add the new model as a second entry (see "Switch between installed models" below) so you can flip between them.
 5. **Verify in VS Code:** type in a code or Markdown file, then:
    ```bash
    grep 'POST *"/api/generate"' /opt/homebrew/var/log/ollama.log | tail -5   # latency per suggestion
@@ -73,6 +72,38 @@ models:
 7. **Free disk** for a model you no longer want: `ollama rm <tag>`.
 
 Baseline for `qwen2.5-coder:1.5b-base` (M4 Pro, 24 GB), 45 VS Code requests: min 50 ms, median 394 ms, p90 440 ms, cold load ~1.5 s; FIM test 143 tok/s; 1.1 GB at 4K context, 1.3 GB at 8K.
+
+Candidates checked 2026-10-28 (FIM-capable, from the Ollama registry): `qwen2.5-coder:7b-base` 4.68 GB Apache 2.0; `qwen2.5-coder:3b-base` 1.93 GB but **Qwen Research License, non-commercial only** (not for work use); `codegemma:2b` 1.55 GB; `starcoder2:3b` 1.71 GB. General chat models (qwen2.5, qwen3, llama3.2, gemma3, granite3.3, phi4-mini) have no FIM template, so they don't work for autocomplete. Use is mostly prose (emails, case comments in Markdown).
+
+## Switch between installed models
+
+Keep every model you want to flip between in `config.yaml`, each with `roles: [autocomplete]`:
+
+```yaml
+models:
+  - name: Qwen2.5-Coder 1.5B (local)
+    provider: ollama
+    model: qwen2.5-coder:1.5b-base
+    apiBase: http://localhost:11434
+    roles: [autocomplete]
+    defaultCompletionOptions:
+      keepAlive: 900
+  - name: Qwen2.5-Coder 7B (local)
+    provider: ollama
+    model: qwen2.5-coder:7b-base
+    apiBase: http://localhost:11434
+    roles: [autocomplete]
+    defaultCompletionOptions:
+      keepAlive: 900
+```
+
+**Switch (UI, one click):** open the Continue panel → settings (gear) → Models → **Autocomplete** dropdown → pick the model. Continue 2.0.0 lists every model that has the `autocomplete` role there.
+
+**Switch (fallback, no UI):** keep only one entry with the `autocomplete` role (comment out the other's `roles` line, or the whole entry) and save; Continue reloads on save.
+
+**Verify after switching:** type a few words, then `ollama ps` must show the tag you picked. If it still shows the old one, reload the window (Developer: Reload Window) and check again.
+
+**Free the old model's memory immediately:** `ollama stop <old-tag>` (otherwise it unloads after `keepAlive`). Both stay on disk; `ollama rm <tag>` only when you're done with one for good.
 
 ## Other common changes
 
